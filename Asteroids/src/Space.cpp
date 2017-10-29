@@ -328,7 +328,7 @@ void collisions(){
                 i--;
                 j--;
                 destroyed++;
-                cout << destroyed << endl;
+                //cout << destroyed << endl;
                 score += 100;
             }
         }
@@ -520,7 +520,7 @@ void startGame(){
     
     power_up1 = false;
     power_up2 = false;
-    cout << "Number of asteroids to start:" << start_ast << endl;
+    //cout << "Number of asteroids to start:" << start_ast << endl;
 }
 
 void init() {
@@ -631,14 +631,41 @@ void play(){
     }
 }
 
+void getPythonCommands(){
+    std::string command;
+    std::getline (std::cin,command);
+    std::cout << command[0] << ", " << command[1] << ", " << command[2] << ", " << command[3] << "\n";
+    
+    if (command[0] == '1'){
+        keys[GLUT_KEY_LEFT] = true;
+    } else {
+        keys[GLUT_KEY_LEFT] = false;
+    }
+    
+    if (command[1] == '1'){
+        keys[GLUT_KEY_RIGHT] = true;
+    } else {
+        keys[GLUT_KEY_RIGHT] = false;
+    }
+    
+    if (command[2] == '1'){
+        keys[GLUT_KEY_UP] = true;
+    } else {
+        keys[GLUT_KEY_UP] = false;
+    }
+    
+    if (command[3] == '1'){
+        keys[32] = true;
+    } else {
+        keys[32] = false;
+    }
+}
+
 /* Handler for window-repaint event. Call back when the window first appears and
  whenever the window needs to be re-painted. */
 void display() {
     
-    char buf;
-    fread(&buf, 1, 1, stdin);
-    fwrite(&buf, 1, 1, stdout);
-    fflush(stdout);
+    getPythonCommands();
     
     // tell OpenGL to use the whole window for drawing
     glViewport(0, 0, screen_width, screen_height);
@@ -666,6 +693,7 @@ void display() {
             //play();
             break;
         case game_over:
+            std::cout << "over" << "\n";
             if (gameOverWait > 100){
                 display_game_over();
             } else {
