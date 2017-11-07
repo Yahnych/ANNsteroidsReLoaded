@@ -17,6 +17,8 @@ enum type {SHIP, ASTEROID, POWERUP};
 
 GLdouble screen_width, screen_height;
 
+bool CONTROLLER = true;
+
 int wd;
 
 vector<Asteroid> asteroids;
@@ -314,15 +316,20 @@ void collisions(){
     if (!respawning && screen != game_over){
         for (int i = 0; i < asteroids.size(); ++i){
             if (asteroids[i].detectCollision(ship) && !respawning){
-                explosion(asteroids[i].getLocation(), asteroids[i].getCircle().get_radius(), ASTEROID);
-                explosion(ship.getLocation(), 30, SHIP);
+            
+            	if (!CONTROLLER){
+                	explosion(asteroids[i].getLocation(), asteroids[i].getCircle().get_radius(), ASTEROID);
+                	explosion(ship.getLocation(), 30, SHIP);
+                }
                 ship.regenerate();
                 ship.setNumLives(ship.getNumLives()-1);
                 if (ship.getNumLives() == 0){
                     screen = game_over;
                 }
                 remove_life();
+                
                 respawning = true;
+                
                 asteroids.erase(asteroids.begin() + i);
                 i--;
                 magazinetime=false;
@@ -750,8 +757,13 @@ void kbd(unsigned char key, int x, int y)
     
     if (key == 'r' && screen == paused){
         screen = game_play;
-        
     }
+    
+    if (key == 'm'){
+    	CONTROLLER = !CONTROLLER;
+    	ship.restore();
+    }
+    
     if (screen == paused && key == 115){
         saveGame();
     
