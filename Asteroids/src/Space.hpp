@@ -26,6 +26,7 @@
 
 //#include <OpenAL/OpenAL.h>
 
+#define CONTROLLER true // the speed of the powerup
 
 /* Game Functionality */
 

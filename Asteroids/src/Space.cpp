@@ -13,7 +13,7 @@
 //#include <irrklang/irrKlang.h>
 
 enum screen_state {menu, game_play, paused, game_over};
-enum type {SHIP, ASTEROID,POWERUP};
+enum type {SHIP, ASTEROID, POWERUP};
 
 GLdouble screen_width, screen_height;
 
@@ -69,33 +69,6 @@ int gameOverWait = 0;
 
 vector<int> stars_x;
 vector<int> stars_y;
-
-
-
-//winmm.lib
-//conio.h
-
-/*ALCdevice *device;
-
-ALsizei size, freq;
-ALenum format;
-ALvoid *data;
-ALboolean loop = AL_FALSE;
-
-
-
-
-void test(){
-    device = alcOpenDevice(NULL);
-    if (!device){
-        cout << "Oh no..." << endl;
-    } else {
-        cout << "Heck yeah." << endl;
-    }
-    
-    
-}
-*/
 
 void display_menu() {
     // draw a string message
@@ -322,7 +295,11 @@ void collisions(){
                 break;
             }
             if (asteroids[i].detectCollision(clip[j])){
-                explosion(asteroids[i].getLocation(), asteroids[i].getCircle().get_radius(), ASTEROID);
+            
+            	if (!CONTROLLER){
+                	explosion(asteroids[i].getLocation(), asteroids[i].getCircle().get_radius(), ASTEROID);
+                }
+                
                 asteroids.erase(asteroids.begin() + i);
                 clip.erase(clip.begin() + j);
                 i--;
@@ -468,32 +445,50 @@ void generateBullet(){
 
 
 void animation(){
-    display_stars();
+	
+	if (!CONTROLLER){
+    	display_stars();
+    }
+    
     if (gameOverWait < 100){
         if (screen != game_over){
             ship.drawShape();
         }
-        display_lives();
+        
+        if (!CONTROLLER){
+    		display_stars();
+    		display_lives();
+    		display_score();
+            display_level(20,20);
+    	}
+        
         drawAllAsteroids();
-        display_score();
-        display_level(20,20);
-        for (int i = 0; i < thrustFire.size(); ++i){
-            thrustFire[i].draw();
-        }
+        
+        
+        
+        if (!CONTROLLER){
+        	for (int i = 0; i < thrustFire.size(); ++i){
+            	thrustFire[i].draw();
+        	}
     
-        for (int i = 0; i < explosionFire.size(); ++i){
-            explosionFire[i].draw();
+        	for (int i = 0; i < explosionFire.size(); ++i){
+           		explosionFire[i].draw();
+        	}
         }
+        
         drawBullets();
+        
         if (power_up1){
             PU1.drawShape();
         }
         if (power_up2){
             PU2.drawShape();
         }
-    
-        if (level_change!=0){
-            display_level(200, 300);
+    	
+    	if (!CONTROLLER){
+        	if (level_change!=0){
+            	display_level(200, 300);
+        	}
         }
         
     }
@@ -501,7 +496,10 @@ void animation(){
 
 void startGame(){
     
-    loadGame();
+    if (!CONTROLLER){
+    	loadGame();
+    }
+    
     asteroids.clear();
     clip.clear();
     score = 0;
@@ -520,13 +518,18 @@ void startGame(){
     
     power_up1 = false;
     power_up2 = false;
-    //cout << "Number of asteroids to start:" << start_ast << endl;
+    
+    if (CONTROLLER){
+    	screen = game_play;
+        level_change = 1;
+    }
 }
 
 void init() {
     
    // test();
     //start();
+    
     ship = Ship();
     startGame();
     screen_width = 600;
@@ -592,7 +595,10 @@ void play(){
         if (keys[GLUT_KEY_UP]){
             if (screen != game_over){
                 ship.move();
-                spawnThrustFire();
+                
+                if (!CONTROLLER){
+                	spawnThrustFire();
+                }
             }
             
         }
@@ -608,7 +614,11 @@ void play(){
 
         }
         moveAllAsteroids();
-        reduceFire();
+        
+        if (!CONTROLLER){
+        	reduceFire();
+        }
+        
         collisions();
         moveBullets();
         
@@ -622,7 +632,11 @@ void play(){
         levelHandler(level);
         if (respawning){
             ship.setRespawning(ship.getRespawning() + 1);
-            ship.blink();
+            
+            if (!CONTROLLER){
+            	ship.blink();
+            }
+            
             if (ship.getRespawning() == 80){
                 ship.setRespawning(0);
                 respawning = false;
@@ -665,7 +679,8 @@ void getPythonCommands(){
  whenever the window needs to be re-painted. */
 void display() {
     
-    getPythonCommands();
+    /* Comment this out when the game is controlled by a Python controller */
+    //getPythonCommands();
     
     // tell OpenGL to use the whole window for drawing
     glViewport(0, 0, screen_width, screen_height);
@@ -858,7 +873,7 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_RGBA);
     
     glutInitWindowSize((int)screen_width, (int)screen_height);
-    glutInitWindowPosition(100, 100); // Position the window's initial top-left corner
+    glutInitWindowPosition(0, 0); // Position the window's initial top-left corner
     /* create the window and store the handle to it */
     wd = glutCreateWindow("Asteroids!" /* title */ );
     

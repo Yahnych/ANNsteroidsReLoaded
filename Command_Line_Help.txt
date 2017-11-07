@@ -1,5 +1,7 @@
 Compiling asteroids
 
-g++ -c -std=c++11 GamePiece.cpp Shape.cpp Space.cpp
+g++ -c -std=c++11 src/GamePiece.cpp src/Shape.cpp src/Space.cpp 
 
-g++ GamePiece.o Shape.o Space.o -framework GLUT -framework OpenGL -o Asteroids
+mv *.o object_files
+
+g++ object_files/GamePiece.o object_files/Shape.o object_files/Space.o -framework GLUT -framework OpenGL -o Asteroids
