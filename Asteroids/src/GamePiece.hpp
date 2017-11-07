@@ -199,6 +199,8 @@ public:
     
     void blink();
     
+    void restore();
+    
     Triangle_Coord getTriangle() const;
     
     virtual void drawShape() override;

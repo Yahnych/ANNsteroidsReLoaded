@@ -187,6 +187,10 @@ void Ship::blink(){
     }
 }
 
+void Ship::restore(){
+	shape.set_color(1, 1, 0);
+}
+
 Triangle_Coord Ship::getTriangle() const{
     return shape;
 }
