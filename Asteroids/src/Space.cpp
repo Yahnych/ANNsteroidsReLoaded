@@ -10,7 +10,13 @@
 #include "GamePiece.hpp"
 #include <iostream>
 #include <fstream>
-//#include <irrklang/irrKlang.h>
+
+static GLubyte *pixels = NULL;
+static const GLenum FORMAT = GL_RGBA;
+static const GLuint FORMAT_NBYTES = 4;
+static const unsigned int HEIGHT = 600;
+static const unsigned int WIDTH = 600;
+static unsigned int nscreenshots = 0;
 
 enum screen_state {menu, game_play, paused, game_over};
 enum type {SHIP, ASTEROID, POWERUP};
@@ -548,8 +554,15 @@ void init() {
 /* Initialize OpenGL Graphics */
 void initGL() {
     // Set "clearing" or background color
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black and opaque
-    glColor3f(0.0f, 0.0f, 1.0f);
+    glReadBuffer(GL_BACK);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glViewport(0, 0, WIDTH, HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    
+    pixels = (GLubyte*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);
 }
 
 void levelHandler(int l){
@@ -682,12 +695,42 @@ void getPythonCommands(){
     }
 }
 
+
+void deinit(void)  {
+    free(pixels);
+}
+
+
+void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
+                       unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels) {
+    size_t i, j, k, cur;
+    enum Constants { max_filename = 256 };
+    char filename[max_filename];
+    snprintf(filename, max_filename, "%s%d.ppm", prefix, frame_id);
+    FILE *f = fopen(filename, "w");
+    //puts(filename);
+    fprintf(f, "P3\n%d %d\n%d\n", width, HEIGHT, 255);
+    for (i = 0; i < height; i++) {
+        for (j = 0; j < width; j++) {
+            cur = pixel_nbytes * ((height - i - 1) * width + j);
+            fprintf(f, "%3d %3d %3d ", pixels[cur], pixels[cur + 1], pixels[cur + 2]);
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+}
+
 /* Handler for window-repaint event. Call back when the window first appears and
  whenever the window needs to be re-painted. */
 void display() {
+    glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels);
     
     /* Comment this out when the game is controlled by a Python controller */
-    //getPythonCommands();
+    if (CONTROLLER){
+        create_ppm("/Users/adambarson/Desktop/MachineLearning/ANNsteroidsReLoaded/Asteroids/screenshots/tmp", nscreenshots, WIDTH, HEIGHT, 255, FORMAT_NBYTES, pixels);
+        nscreenshots++;
+    	getPythonCommands();
+    }
     
     // tell OpenGL to use the whole window for drawing
     glViewport(0, 0, screen_width, screen_height);
@@ -916,6 +959,8 @@ int main(int argc, char** argv) {
     
     // handles timer
     glutTimerFunc(0, timer, 0);
+    
+    atexit(deinit);
     
     // Enter the event-processing loop
     glutMainLoop();
