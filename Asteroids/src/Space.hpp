@@ -9,7 +9,10 @@
 #ifndef Space_hpp
 #define Space_hpp
 
+#define NUM_THREADS 10000
+
 #include <stdio.h>
+#include <thread>
 
 #include <stdlib.h>
 #ifdef _WIN32
@@ -24,13 +27,15 @@
 #include <GL/glut.h>
 #endif
 
+
+extern "C" {
+#include <pthread.h>
+}
 //#include <OpenAL/OpenAL.h>
 
 //#define CONTROLLER true // the speed of the powerup
 
-
 /* Game Functionality */
-
 void spawnThrustFire();
 void drawBullets();
 void moveBullets();
@@ -87,6 +92,8 @@ void openMenu();
 // as we haven't created a GLUT window yet
 void init(void);
 
+
+
 // Callback functions for GLUT */
 
 // Draw the window - this is where all the GL actions are
@@ -113,5 +120,8 @@ void drag(int x, int y);
 void mouse(int button, int state, int x, int y);
 
 int graphicsPlay(int argc, char *argv[]);
+
+void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
+                           unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels);
 
 #endif /* Space_hpp */

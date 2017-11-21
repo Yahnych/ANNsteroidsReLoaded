@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include "Shape.hpp"
-
+#include <thread>
 #define MAX_SPEED 12 //max speed that the Ship can move in
 #define BUFFER 20 //the distance from the edge of the screen the Ship or Asteroid can go before being moved to the opposite side of the screen
 #define ROTATION_FORCE 5 //the amount of degrees the Ship rotates

@@ -10,6 +10,9 @@
 #include "GamePiece.hpp"
 #include <iostream>
 #include <fstream>
+#include <stack>
+
+pthread_t threads[NUM_THREADS];
 
 static GLubyte *pixels = NULL;
 static const GLenum FORMAT = GL_RGBA;
@@ -26,6 +29,7 @@ GLdouble screen_width, screen_height;
 bool CONTROLLER = true;
 
 int wd;
+
 
 vector<Asteroid> asteroids;
 
@@ -701,23 +705,58 @@ void deinit(void)  {
 }
 
 
-void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
-                       unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels) {
+struct PPMParams {
+    
+    // create_ppm parameters
+    char *prefix;
+    int frame_id;
+    unsigned int width;
+    unsigned int height;
+    unsigned int color_max;
+    unsigned int pixel_nbytes;
+    GLubyte *pixels;
+    
+};
+
+//void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
+//                       unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels) {
+//    size_t i, j, k, cur;
+//    enum Constants { max_filename = 256 };
+//    char filename[max_filename];
+//    snprintf(filename, max_filename, "%s%d.ppm", prefix, frame_id);
+//    FILE *f = fopen(filename, "w");
+//    //puts(filename);
+//    fprintf(f, "P3\n%d %d\n%d\n", width, HEIGHT, 255);
+//    for (i = 0; i < height; i++) {
+//        for (j = 0; j < width; j++) {
+//            cur = pixel_nbytes * ((height - i - 1) * width + j);
+//            fprintf(f, "%3d %3d %3d ", pixels[cur], pixels[cur + 1], pixels[cur + 2]);
+//        }
+//        fprintf(f, "\n");
+//    }
+//    fclose(f);
+//}
+
+void *create_ppm(void *ppm_proxy){
+    struct PPMParams *ppm = (struct PPMParams*)ppm_proxy;
+
     size_t i, j, k, cur;
     enum Constants { max_filename = 256 };
     char filename[max_filename];
-    snprintf(filename, max_filename, "%s%d.ppm", prefix, frame_id);
+    snprintf(filename, max_filename, "%s%d.ppm", ppm->prefix, ppm->frame_id);
     FILE *f = fopen(filename, "w");
     //puts(filename);
-    fprintf(f, "P3\n%d %d\n%d\n", width, HEIGHT, 255);
-    for (i = 0; i < height; i++) {
-        for (j = 0; j < width; j++) {
-            cur = pixel_nbytes * ((height - i - 1) * width + j);
-            fprintf(f, "%3d %3d %3d ", pixels[cur], pixels[cur + 1], pixels[cur + 2]);
+    fprintf(f, "P3\n%d %d\n%d\n", ppm->width, HEIGHT, 255);
+    for (i = 0; i < ppm->height; i++) {
+        for (j = 0; j < ppm->width; j++) {
+            cur = ppm->pixel_nbytes * ((ppm->height - i - 1) * ppm->width + j);
+            fprintf(f, "%3d %3d %3d ", ppm->pixels[cur], ppm->pixels[cur + 1], ppm->pixels[cur + 2]);
+            
         }
         fprintf(f, "\n");
     }
     fclose(f);
+    pthread_exit(0);
 }
 
 /* Handler for window-repaint event. Call back when the window first appears and
@@ -727,9 +766,27 @@ void display() {
     
     /* Comment this out when the game is controlled by a Python controller */
     if (CONTROLLER){
-        create_ppm("/Users/adambarson/Desktop/MachineLearning/ANNsteroidsReLoaded/Asteroids/screenshots/tmp", nscreenshots, WIDTH, HEIGHT, 255, FORMAT_NBYTES, pixels);
-        nscreenshots++;
-    	getPythonCommands();
+    
+    pthread_t ppm_thread;
+    
+    PPMParams *ppm = new PPMParams;             // create_ppm parameter struct
+    
+    // populate ppm's parameters
+    ppm->prefix = "/Users/danberenberg/Desktop/testshots/";
+    ppm->frame_id = nscreenshots;
+    ppm->width = WIDTH;
+    ppm->height = HEIGHT;
+    ppm->pixel_nbytes = FORMAT_NBYTES;
+    ppm->pixels = pixels;
+    
+    if (nscreenshots%5 == 0) {
+        pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
+        pthread_detach(ppm_thread);//,NULL);
+    }
+    nscreenshots++;
+    //cout << "crated " << nscreenshots << endl;
+
+    getPythonCommands();
     }
     
     // tell OpenGL to use the whole window for drawing
@@ -748,7 +805,7 @@ void display() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     animation();
-    
+    //cout << "crated 2" << endl;
     switch(screen) {
         case menu:
             display_menu();
@@ -771,6 +828,7 @@ void display() {
     }
     
     glFlush();
+    //cout << "leaving display no
 }
 
 // http://www.theasciicode.com.ar/ascii-control-characters/escape-ascii-code-27.html
@@ -835,7 +893,7 @@ void kbd(unsigned char key, int x, int y)
     
     glutPostRedisplay();
     
-    return;
+    pthread_exit(0);
 }
 
 // http://www.theasciicode.com.ar/ascii-control-characters/escape-ascii-code-27.html
@@ -890,7 +948,6 @@ void kbdU(int key, int x, int y) {
     }
     
     glutPostRedisplay();
-    
     return;
 }
 
@@ -920,6 +977,11 @@ void timer(int extra) {
 
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {
+   //for (int i = 0; i < NUM_THREADS; i++){
+    //   pthread_create(&threads[i],NULL,&create_ppm,NULL);
+    //}
+    //CGLContextObj ctx = CGLGetCurrentContext();
+    //err =  CGLEnable( ctx, kCGLCEMPEngine);
     
     init();
     

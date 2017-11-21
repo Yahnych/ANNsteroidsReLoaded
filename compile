@@ -2,8 +2,7 @@
 
 echo “Compiling Asteroids“
 
-g++ -c -std=c++11 Asteroids/src/GamePiece.cpp Asteroids/src/Shape.cpp Asteroids/src/Space.cpp 
+g++ -c -std=c++11 -pthread Asteroids/src/GamePiece.cpp Asteroids/src/Shape.cpp Asteroids/src/Space.cpp
 
 mv *.o Asteroids/object_files
-
 g++ Asteroids/object_files/GamePiece.o Asteroids/object_files/Shape.o Asteroids/object_files/Space.o -framework GLUT -framework OpenGL -o Asteroids/Asteroids

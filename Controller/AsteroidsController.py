@@ -14,7 +14,7 @@ def play_game(p):
     right = random.randint(0, 1)
     up = random.randint(0, 1)
     space = random.randint(0, 1)
-    while (result != 'over'):
+    while (i < 300):
         value = str(left) + str(right) + str(up) + str(space) + '\n'
         value = bytes(value, 'UTF-8')  # Needed in Python 3.
         p.stdin.write(value)
@@ -40,7 +40,7 @@ def main(argv):
         asteroids_location = input("Enter the file path of Asteroids:\n")
     elif (len(argv) == 2):
         asteroids_location = sys.argv[1]
-    process = Popen([asteroids_location],  stdout=PIPE, stdin=PIPE)
+    process = Popen([asteroids_location],  stdout=PIPE, stdin=PIPE) 
     play_game(process)
 
 if __name__ == "__main__":
