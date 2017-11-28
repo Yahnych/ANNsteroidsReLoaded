@@ -2,3 +2,5 @@
 *.o
 
 Asteroids/object_files/*.o
+
+Asteroids/Asteroids
