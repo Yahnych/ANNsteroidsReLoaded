@@ -762,31 +762,36 @@ void *create_ppm(void *ppm_proxy){
 /* Handler for window-repaint event. Call back when the window first appears and
  whenever the window needs to be re-painted. */
 void display() {
-    glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels);
+    
     
     /* Comment this out when the game is controlled by a Python controller */
     if (CONTROLLER){
     
-    pthread_t ppm_thread;
+    	
     
-    PPMParams *ppm = new PPMParams;             // create_ppm parameter struct
+    	if (nscreenshots%4 == 0) {
+    		glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels);
+    	
+    		pthread_t ppm_thread;
     
-    // populate ppm's parameters
-    ppm->prefix = "/Users/danberenberg/Desktop/testshots/";
-    ppm->frame_id = nscreenshots;
-    ppm->width = WIDTH;
-    ppm->height = HEIGHT;
-    ppm->pixel_nbytes = FORMAT_NBYTES;
-    ppm->pixels = pixels;
+    		PPMParams *ppm = new PPMParams;             // create_ppm parameter struct
     
-    if (nscreenshots%5 == 0) {
-        pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
-        pthread_detach(ppm_thread);//,NULL);
-    }
-    nscreenshots++;
-    //cout << "crated " << nscreenshots << endl;
+    		// populate ppm's parameters
+    		ppm->prefix = "/Users/adambarson/Desktop/testshots/pic";
+    		ppm->frame_id = nscreenshots;
+    		ppm->width = WIDTH;
+    		ppm->height = HEIGHT;
+    		ppm->pixel_nbytes = FORMAT_NBYTES;
+    	
+    		ppm->pixels = pixels;
+    	
+        	pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
+        	pthread_detach(ppm_thread);//,NULL);
+    	}
+    	nscreenshots++;
+    	//cout << "crated " << nscreenshots << endl;
 
-    getPythonCommands();
+    	getPythonCommands();
     }
     
     // tell OpenGL to use the whole window for drawing
