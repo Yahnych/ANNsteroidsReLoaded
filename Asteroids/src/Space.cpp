@@ -14,6 +14,8 @@
 
 pthread_t threads[NUM_THREADS];
 
+static char* file_path;
+
 static GLubyte *pixels = NULL;
 static const GLenum FORMAT = GL_RGBA;
 static const GLuint FORMAT_NBYTES = 4;
@@ -777,7 +779,8 @@ void display() {
     		PPMParams *ppm = new PPMParams;             // create_ppm parameter struct
     
     		// populate ppm's parameters
-    		ppm->prefix = "/Users/adambarson/Desktop/testshots/pic";
+    		ppm->prefix=file_path;
+    		//ppm->prefix = "/Users/adambarson/Desktop/testshots/pic";
     		ppm->frame_id = nscreenshots;
     		ppm->width = WIDTH;
     		ppm->height = HEIGHT;
@@ -987,6 +990,13 @@ int main(int argc, char** argv) {
     //}
     //CGLContextObj ctx = CGLGetCurrentContext();
     //err =  CGLEnable( ctx, kCGLCEMPEngine);
+    if (argc == 1){
+    	std::cout << "Error: expecting file path for screenshots" << endl;
+    	exit(-1);
+    } else {
+    	std::cout << "argument: " << argv[1] << endl;
+    	file_path = argv[1];
+    }
     
     init();
     

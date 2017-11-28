@@ -1,7 +1,8 @@
 from subprocess import Popen, PIPE
 import random
 import sys
-
+import argparse
+import os
 
 def play_game(p):
     
@@ -35,12 +36,21 @@ def play_game(p):
     print("Done")
 
 def main(argv):
-    asteroids_location = ""
-    if (len(argv) == 1):
-        asteroids_location = input("Enter the file path of Asteroids:\n")
-    elif (len(argv) == 2):
-        asteroids_location = sys.argv[1]
-    process = Popen([asteroids_location],  stdout=PIPE, stdin=PIPE) 
+    parser = argparse.ArgumentParser(description='Run DRL agent')
+    parser.add_argument('ast_path', type=str,
+                    help='Path of asteroids executable')
+    parser.add_argument('picture_path', type=str,
+                    help='Directory where screenshots will be stored')
+    args = parser.parse_args()
+    
+    asteroids_location = args.ast_path
+    screenshot_location = args.picture_path
+
+    #if (not os.path.exists(screenshot_location)):
+#        print("You done fucked up")
+#        sys.exit(1)
+    
+    process = Popen([asteroids_location, screenshot_location],  stdout=PIPE, stdin=PIPE) 
     play_game(process)
 
 if __name__ == "__main__":
