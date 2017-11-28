@@ -4,3 +4,7 @@
 Asteroids/object_files/*.o
 
 Asteroids/Asteroids
+
+*.ppm
+
+shots/
