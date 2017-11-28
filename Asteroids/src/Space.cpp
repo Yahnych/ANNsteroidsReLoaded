@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
+#include <string>
 
 pthread_t threads[NUM_THREADS];
 
@@ -743,7 +744,21 @@ void *create_ppm(void *ppm_proxy){
     size_t i, j, k, cur;
     enum Constants { max_filename = 256 };
     char filename[max_filename];
-    snprintf(filename, max_filename, "%s%d.ppm", ppm->prefix, ppm->frame_id);
+    
+    // zero padding
+    // -------------
+    int top = 3;
+    string f2str = to_string(ppm->frame_id);
+    
+    string buffer = "";
+    for (int i = f2str.size(); i < top; i++){
+        buffer = buffer + "0";
+    }
+    
+    f2str = buffer + f2str;
+    
+    // ------------
+    snprintf(filename, max_filename, "%s%s.ppm", ppm->prefix, f2str.c_str());
     FILE *f = fopen(filename, "w");
     //puts(filename);
     fprintf(f, "P3\n%d %d\n%d\n", ppm->width, HEIGHT, 255);
@@ -777,7 +792,8 @@ void display() {
     		PPMParams *ppm = new PPMParams;             // create_ppm parameter struct
     
     		// populate ppm's parameters
-    		ppm->prefix = "/Users/adambarson/Desktop/testshots/pic";
+            ppm->prefix = "/Users/danberenberg/Desktop/2017_2018_schoolyear/fall/cs295/project/shots/";
+            //"/Users/adambarson/Desktop/testshots/pic";
     		ppm->frame_id = nscreenshots;
     		ppm->width = WIDTH;
     		ppm->height = HEIGHT;
