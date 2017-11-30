@@ -790,6 +790,7 @@ void *create_ppm(void *ppm_proxy){
     }
     fclose(f);
     currentNumThreads--;
+    free(ppm->pixels);
     pthread_exit(0);
 }
 
@@ -805,7 +806,11 @@ void display() {
         
     	if (screenshot_counter%2 == 0 && !done) {
             currentNumThreads++;
-    		glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels);
+            
+            GLubyte *pixels2 = NULL;
+            pixels2 = (GLubyte*)malloc(FORMAT_NBYTES * WIDTH * HEIGHT);
+            
+    		glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels2);
     	
     		pthread_t ppm_thread;
     
@@ -819,11 +824,12 @@ void display() {
     		ppm->width = WIDTH;
     		ppm->height = HEIGHT;
     		ppm->pixel_nbytes = FORMAT_NBYTES;
-    	
-    		ppm->pixels = pixels;
-    	
-        	pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
+            
+            ppm->pixels = pixels2; //new GLubyte(*pixels);
+        	
+            pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
         	pthread_detach(ppm_thread);//,NULL);
+            
             nscreenshots++;
     	}
     	screenshot_counter++;
