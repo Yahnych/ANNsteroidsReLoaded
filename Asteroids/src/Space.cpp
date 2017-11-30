@@ -13,8 +13,9 @@
 #include <stack>
 #include <string>
 
-pthread_t threads[NUM_THREADS];
 
+static bool done = false;
+static unsigned int currentNumThreads = 0;
 static char* file_path;
 
 static GLubyte *pixels = NULL;
@@ -22,6 +23,7 @@ static const GLenum FORMAT = GL_RGBA;
 static const GLuint FORMAT_NBYTES = 4;
 static const unsigned int HEIGHT = 600;
 static const unsigned int WIDTH = 600;
+static unsigned int screenshot_counter = 0;
 static unsigned int nscreenshots = 0;
 
 enum screen_state {menu, game_play, paused, game_over};
@@ -675,6 +677,19 @@ void play(){
 void getPythonCommands(){
     std::string command;
     std::getline (std::cin,command);
+    
+    if (done){
+        if (currentNumThreads == 0){
+           std::cout << "d\n";
+        } else {
+            std::cout << "...\n";
+        }
+    }
+    
+    else if (command[0] == 'd'){
+        done = true;
+        std::cout << "Wrapping up..." << "\n";
+    } else {
     std::cout << command[0] << ", " << command[1] << ", " << command[2] << ", " << command[3] << "\n";
     
     if (command[0] == '1'){
@@ -699,6 +714,7 @@ void getPythonCommands(){
         keys[32] = true;
     } else {
         keys[32] = false;
+    }
     }
 }
 
@@ -760,7 +776,7 @@ void *create_ppm(void *ppm_proxy){
     f2str = buffer + f2str;
     
     // ------------
-    snprintf(filename, max_filename, "%s%s.ppm", ppm->prefix, f2str.c_str());
+    snprintf(filename, max_filename, "%s%s_%d.ppm", ppm->prefix, f2str.c_str(), score);
     FILE *f = fopen(filename, "w");
     //puts(filename);
     fprintf(f, "P3\n%d %d\n%d\n", ppm->width, HEIGHT, 255);
@@ -773,6 +789,7 @@ void *create_ppm(void *ppm_proxy){
         fprintf(f, "\n");
     }
     fclose(f);
+    currentNumThreads--;
     pthread_exit(0);
 }
 
@@ -785,8 +802,9 @@ void display() {
     if (CONTROLLER){
     
     	
-    
-    	if (nscreenshots%4 == 0) {
+        
+    	if (screenshot_counter%2 == 0 && !done) {
+            currentNumThreads++;
     		glReadPixels(0, 0, WIDTH, HEIGHT, FORMAT, GL_UNSIGNED_BYTE, pixels);
     	
     		pthread_t ppm_thread;
@@ -806,11 +824,22 @@ void display() {
     	
         	pthread_create(&ppm_thread,NULL,&create_ppm,(void *)ppm);
         	pthread_detach(ppm_thread);//,NULL);
+            nscreenshots++;
     	}
-    	nscreenshots++;
-    	//cout << "crated " << nscreenshots << endl;
-
-    	getPythonCommands();
+    	screenshot_counter++;
+        
+        getPythonCommands();
+        /*
+        if (!done){
+            getPythonCommands();
+        } else {
+            if (currentNumThreads == 0){
+                std::cout << "d" << "\n";
+            } else {
+                std::cout << currentNumThreads << "\n";
+            }
+        }
+         */
     }
     
     // tell OpenGL to use the whole window for drawing
@@ -839,7 +868,7 @@ void display() {
             //play();
             break;
         case game_over:
-            std::cout << "over" << "\n";
+            //std::cout << "over" << "\n";
             if (gameOverWait > 100){
                 display_game_over();
             } else {
@@ -1010,7 +1039,7 @@ int main(int argc, char** argv) {
     	std::cout << "Error: expecting file path for screenshots" << endl;
     	exit(-1);
     } else {
-    	std::cout << "argument: " << argv[1] << endl;
+    	//std::cout << "argument: " << argv[1] << endl;
     	file_path = argv[1];
     }
     
