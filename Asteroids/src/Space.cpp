@@ -779,16 +779,16 @@ void *create_ppm(void *ppm_proxy){
     snprintf(filename, max_filename, "%s%s_%d.ppm", ppm->prefix, f2str.c_str(), score);
     FILE *f = fopen(filename, "w");
     //puts(filename);
-    fprintf(f, "P6\n%d %d\n%d\n", ppm->width, HEIGHT, 255);
+    fprintf(f, "P2\n%d %d\n%d\n", ppm->width, HEIGHT, 255);
     for (i = 0; i < ppm->height; i++) {
         for (j = 0; j < ppm->width; j++) {
             cur = ppm->pixel_nbytes * ((ppm->height - i - 1) * ppm->width + j);
             int red = ppm->pixels[cur];
             int green = ppm->pixels[cur+1];
             int blue  = ppm->pixels[cur+2];
-            int gray = int (0.333*red + 0.333*green + 0.333*blue);
+            int gray = int (0.2126*red + 0.7152*green + 0.0722*blue);
             //fprintf(f, "%3d %3d %3d ", ppm->pixels[cur], ppm->pixels[cur + 1], ppm->pixels[cur + 2]);
-            fprintf(f,"%3d",gray);
+            fprintf(f,"%3d\n",gray);
         }
         fprintf(f, "\n");
     }
