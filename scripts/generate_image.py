@@ -31,7 +31,7 @@ def resize_and_save(filename,out_path,xsize,ysize):
 
 def parse_args():
     arg_parser = argparse.ArgumentParser(description="resize images")
-    arg_parser.add_argument("image_path",help="director[y|ies] in which the images "+
+    arg_parser.add_argument("image_path",help="director[y | ies] in which the images "+
                             "to be resized are located",nargs="+")
     arg_parser.add_argument("x",help="desired x size of the image",type=int)
     arg_parser.add_argument("y",help="desired y size of the image",type=int)
