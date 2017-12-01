@@ -15,23 +15,81 @@ import glob
 from scipy.misc import imread
 from skimage.transform import resize
 from skimage.io import imsave
+import numpy as np
+import warnings
 
-def resize_and_save(filename,out_path,xsize,ysize):
+CURSOR_UP_ONE = '\x1b[1A'
+ERASE_LINE    = '\x1b[2K'
+CURSOR_DOWN_ONE = "\x1b[B"
+BUFFER_LINE   = CURSOR_UP_ONE + ERASE_LINE 
+
+def pgm2pil(filename):
+
+    try:
+        inFile = open(filename)
+
+        header = None
+        size = None
+        maxGray = None
+        data = []
+
+        for line in inFile:
+            stripped = line.strip()
+
+            if stripped[0] == '#': 
+                continue
+            elif header == None: 
+                if stripped != 'P2': return None
+                header = stripped
+            elif size == None:
+                size = map(int, stripped.split())
+            elif maxGray == None:
+                maxGray = int(stripped)
+            else:
+                for item in stripped.split():
+                    data.append(int(item.strip()))
+
+        data = np.reshape(data, (size[1],size[0]))/255.0#/float(maxGray)*255
+        return np.flipud(data)
+
+    except:
+        pass
+
+    return None
+
+def load_bar(curr,full):
+    # 100 bars
+    ratio = curr/float(full)
+    num_bars = int (100*ratio)/2
+ 
+    load = "[ " + ":"*num_bars + " "*(50-num_bars) + "]"
+    
+    return load
+def resize_and_save(filename,out_path,xsize,ysize,curr,full):
     """
     resize an image given by the [filename], by the specified [xsize] and [ysize] dimensions
     writing the new image to the [out_path].
     """
-    print ("opening {}".format(filename))
-    #im = Image.open(filename)
-    im2 = imread(filename)
-    #m_grayscale = im.convert('LA')
-    resized = resize(im2,(xsize,ysize))
-    filename = filename[:-4]
-    filename = filename.split("/")[-1]
-
-    imsave(out_path+filename+'_rsz{}_{}.ppm'.format(xsize,ysize),resized)        
-    #im_resized.save(out_path + filename+'_rsz{}_{}.png'.format(xsize,ysize))
-
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        #im_resized.save(out_path + filename+'_rsz{}_{}.png'.format(xsize,ysize))
+        
+        if curr != 0:
+            print (BUFFER_LINE + "resizing {:<25} --> {}/{} {}".format(filename,curr,full,load_bar(curr,full)))
+        
+        else:
+            print ("resizing {:<25} --> {}/{} {}".format(filename,curr,full,load_bar(curr,full)))
+        #im = Image.open(filename)
+        pgm = pgm2pil(filename)
+    
+        #im2 = imread(filename)
+        #print(im2)
+        #m_grayscale = im.convert('LA')
+        resized = resize(pgm,(xsize,ysize))
+        filename = filename[:-4]
+        filename = filename.split("/")[-1]
+    
+        imsave(out_path+filename+'_rsz{}_{}.pgm'.format(xsize,ysize),resized) 
 
 def parse_args():
     """
@@ -48,6 +106,7 @@ def parse_args():
 
 if __name__ == '__main__':
     
+
     # parse otu args
     args = parse_args().parse_args()
     
@@ -70,7 +129,8 @@ if __name__ == '__main__':
             directory_stem= "."
         
         # get all of the ppm files in this directory
-        files = glob.glob(directory_stem + "/*.ppm")
+        files = glob.glob(directory_stem + "/*.pgm")
+        full_num = len(files)
         # not output directory specified, create one inside 
         # of this directory
         if not out_dir:
@@ -82,6 +142,6 @@ if __name__ == '__main__':
             out_dir = directory_stem + "/rsz/"
         
         # post setup -- resize and save those pups
-        for f in files:
-            resize_and_save(f,out_dir,x_size,y_size)
+        for i,f in enumerate(files):
+            resize_and_save(f,out_dir,x_size,y_size,i,full_num)
 
