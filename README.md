@@ -11,3 +11,8 @@ Then, compile the executable Asteroids:
 g++ GamePiece.o Shape.o Space.o -framework GLUT -framework OpenGL -o Asteroids
 
 Now, the executable Asteroids can be run.
+
+<u>necessary libaries</u>
+* scikit-image
+
+
