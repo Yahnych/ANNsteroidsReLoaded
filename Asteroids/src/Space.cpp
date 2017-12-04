@@ -529,7 +529,7 @@ void startGame(){
     gameOverWait = 0;
     screen = menu;
     ship.regenerate();
-    ship.setNumLives(3);
+    ship.setNumLives(1);
     level = 1;
     respawning = true;
     
@@ -685,7 +685,10 @@ void getPythonCommands(){
             std::cout << "...\n";
         }
     }
-    
+    else if (ship.getNumLives() == 0){
+        std::cout << "e\n";
+        done = true;
+    }
     else if (command[0] == 'd'){
         done = true;
         std::cout << "Wrapping up..." << "\n";
@@ -716,6 +719,7 @@ void getPythonCommands(){
         keys[32] = false;
     }
     }
+    
 }
 
 
@@ -807,7 +811,6 @@ void display() {
     
     /* Comment this out when the game is controlled by a Python controller */
     if (CONTROLLER){
-    
     	
         
     	if (screenshot_counter%2 == 0 && !done) {

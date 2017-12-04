@@ -27,7 +27,6 @@ def pgm2pil(filename):
 
     try:
         inFile = open(filename)
-
         header = None
         size = None
         maxGray = None
@@ -35,14 +34,14 @@ def pgm2pil(filename):
 
         for line in inFile:
             stripped = line.strip()
-
+           # print (stripped)
             if stripped[0] == '#': 
                 continue
             elif header == None: 
                 if stripped != 'P2': return None
                 header = stripped
             elif size == None:
-                size = map(int, stripped.split())
+                size = [int(elt) for elt in stripped.split()]#map(int, stripped.split())
             elif maxGray == None:
                 maxGray = int(stripped)
             else:
@@ -52,7 +51,8 @@ def pgm2pil(filename):
         data = np.reshape(data, (size[1],size[0]))/255.0#/float(maxGray)*255
         return np.flipud(data)
 
-    except:
+    except Exception as e:
+        print(e, "OH SHIT");
         pass
 
     return None
@@ -62,7 +62,7 @@ def load_bar(curr,full):
     ratio = curr/float(full)
     num_bars = int (100*ratio)/2
  
-    load = "[ " + ":"*num_bars + " "*(50-num_bars) + "]"
+    load = "[ " + ":"*int(num_bars) + " "*(50-int(num_bars)) + "]"
     
     return load
 def resize_and_save(filename,out_path,xsize,ysize,curr,full):
