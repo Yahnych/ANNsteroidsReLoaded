@@ -842,6 +842,10 @@ void display() {
     	}
     	screenshot_counter++;
         
+        // increment score for living reward every time the agent
+        // could act
+        score++;
+        
         getPythonCommands();
         /*
         if (!done){
@@ -1067,7 +1071,7 @@ int main(int argc, char** argv) {
     glutInitWindowPosition(0, 0); // Position the window's initial top-left corner
     /* create the window and store the handle to it */
     wd = glutCreateWindow("Asteroids!" /* title */ );
-    glutHideWindow();
+
     // Register callback handler for window re-paint event
     glutDisplayFunc(display);
     

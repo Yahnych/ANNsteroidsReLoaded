@@ -17,7 +17,7 @@ def play_game(p):
     up = 0
     space = random.randint(0, 1)
     
-    while (i < 200 and 'e' not in str(result)):
+    while (i < 400 and 'e' not in str(result)):
         value = str(left) + str(right) + str(up) + str(space) + '\n'
         value = bytes(value, 'UTF-8')  # Needed in Python 3.
         p.stdin.write(value)
