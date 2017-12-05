@@ -342,6 +342,9 @@ void collisions(){
                     screen = game_over;
                 }
                 remove_life();
+                if (CONTROLLER){
+                    score -= 1000;
+                }
                 
                 respawning = true;
                 
