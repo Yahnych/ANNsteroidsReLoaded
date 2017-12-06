@@ -343,10 +343,10 @@ void collisions(){
                 }
                 remove_life();
                 if (CONTROLLER){
-                    score -= 1000;
+                    //score -= 1000;
                 }
                 
-                respawning = true;
+                //rm respawning = true;
                 
                 asteroids.erase(asteroids.begin() + i);
                 i--;
