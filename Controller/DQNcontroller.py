@@ -8,7 +8,7 @@ Created on Mon Dec  4 18:47:08 2017
 
 from subprocess import Popen, PIPE
 import tensorflow as tf
-#mport tensorflow.contrib.slim as slim # library to remove boilerplate code
+import tensorflow.contrib.slim as slim # library to remove boilerplate code
 import numpy as np
 import random
 import glob
@@ -16,7 +16,6 @@ import sys, os
 import controller_utils as ut
 import datetime
 import warnings
-import logging
 import pickle
 
 def save(data,filename):
@@ -151,17 +150,18 @@ class QNetwork():
         ###################### Input                       ####################
 
         self.frame_array = tf.placeholder(shape=[None,ut.X_SIZE*ut.Y_SIZE*ut.N_CHANNELS],dtype=tf.float32)
+        
         self.in_image    = tf.reshape(self.frame_array,shape=[-1,ut.X_SIZE,ut.Y_SIZE,ut.N_CHANNELS])
         
-        ###################### ConvLayer1: 8x8x1x32 stride 4 ##################
-        print ("[+] Building ConvLayer1: 8x8x1x32 stride 4..")
-        self.w_conv1 = self.weights([8,8,1,32])
+        ###################### ConvLayer1: 8x8x4x32 stride 4 ##################
+        print ("[+] Building ConvLayer1: 8x8x4x32 stride 4..")
+        self.w_conv1 = self.weights([8,8,4,32])
         
         # no biases .. ?
         #self.b_conv1 = self.biases([32])
         self.conv1 = self.cnv_lyr(self.in_image,self.w_conv1,[1,4,4,1])
         self.h_conv1 = tf.nn.relu(self.conv1)
-        print(ut.BUFFER_LINE + "[+] Built ConvLayer1: 8x8x1x32 stride 4")
+        print(ut.BUFFER_LINE + "[+] Built ConvLayer1: 8x8x4x32 stride 4")
        
         ###################### ConvLayer2: 4x4x64 stride 2 ####################
         print ("[+] Building ConvLayer2: 4x4x32x64 stride 4.. ")
@@ -181,44 +181,56 @@ class QNetwork():
         #self.b_conv2 = self.biases([64])
         self.conv3 = self.cnv_lyr(self.h_conv2,self.w_conv3,[1,1,1,1])
         self.h_conv3 = tf.nn.relu(self.conv3)
-        
+
         # take output of Conv3 and separate into Advantage and Value streams
         #self.streamAC,self.streamVC = tf.split(self.conv4,2,3)
         print(ut.BUFFER_LINE + "[+] Built ConvLayer3: 3x3x64x64 stride 1")
         
-        ###################### Fully Connected (FC1): (3x3x64)x512 ############
-        print("[+] Building FC1: (3x3x64)x512 stride 1.. ")
-
-        print (self.h_conv3.shape)
-        self.flattened = tf.reshape(self.h_conv3,[-1,3136])
+        ###################### ConvLayer4: 7x7x3 stride 1 ####################
+        print("[+] Building ConvLayer4: 7x7x512x1 stride 1")
+        self.w_conv4 = self.weights([7,7,64,h_size])
+        self.conv4   = self.cnv_lyr(self.h_conv3,self.w_conv4,[1,1,1,1])
+        self.h_conv4 = tf.nn.relu(self.conv4)
+        print(ut.BUFFER_LINE + "[+] Built ConvLayer4: 7x7x512x1 stride 1")
         
-        self.w_fc1 = self.weights([3136,h_size])
-        self.b_fc1 = self.biases([h_size])
-
-        self.fc1 = (tf.matmul(self.flattened,self.w_fc1) + self.b_fc1)
-        print(ut.BUFFER_LINE + "[+] Built FC1: (3x3x64)x512 stride 1")
-
-        ###################### Q values and Initial weights ################### 
-        print("[+] Initializing parameters")
+        ###################### Fully Connected (FC1): (3x3x64)x512 ############
+        print("[+] Building Dual Layer: Separate Advantage and Value streams")
+        
+        self.streamAC, self.streamVC = tf.split(self.h_conv4,2,3)
+        
+        self.streamA = slim.flatten(self.streamAC)
+        self.streamV = slim.flatten(self.streamVC)
+        
         xavier_init = tf.contrib.layers.xavier_initializer()
         
-        self.Q_wts = tf.Variable(xavier_init([h_size,3]))
-        self.Qout = tf.matmul(self.fc1,self.Q_wts)
+        self.AW = tf.Variable(xavier_init([h_size//2,3]))
+        self.VW = tf.Variable(xavier_init([h_size//2,1]))
+        
+        self.Advantage = tf.matmul(self.streamA,self.AW)
+        self.Value = tf.matmul(self.streamV,self.VW)
+        
+        print(ut.BUFFER_LINE + "[+] Built Dual Layer: Separate Advantage and Value streams")
+        
+        ###################### Q values and Initial weights ################### 
+        print("[+] Initializing parameters")
+ 
+        self.Qout = self.Value + tf.subtract(self.Advantage,tf.reduce_mean(self.Advantage,axis=1,keep_dims=True))
         self.predict = tf.argmax(self.Qout,1)
-        # get loss function by taking squared difference between
-        # target Q and predicted Q
-        
+       
         self.targetQ = tf.placeholder(shape=[None],dtype=tf.float32)
-        self.actions = [0,1,2]
-        self.actions_onehot = tf.one_hot(self.actions,1)
+
+        self.actions = tf.placeholder(shape=[None],dtype=tf.int32)
+
+        self.actions_onehot = tf.one_hot(self.actions,3,dtype=tf.float32)
+    
         self.Q = tf.reduce_sum(tf.multiply(self.Qout,self.actions_onehot),axis=1)
+
         self.TD_error = tf.square(self.targetQ-self.Q)
-        
         self.loss = tf.reduce_mean(self.TD_error)
         
         self.trainer = tf.train.AdamOptimizer(learning_rate=0.0001)
         self.optimizer = self.trainer.minimize(self.loss)
-        
+        print()
     def weights(self,dims):
         """
         Initialize a set of weights with dimensions
@@ -283,14 +295,15 @@ with warnings.catch_warnings():
     BATCH_SIZE = 32
     UPDATE_FREQ = 2
     PLAY_FREQ = 3    # take action every 6 frames which is comprable to human speeds
-    N_STEPS = 600
-    N_EPISODES = 100
+    N_STEPS = 400
+    N_EPISODES = 200
     
     gamma = 0.99
     starting_epsilon = 1   # starting epsilon
-    ending_epsilon   = 0.1  # decreases on some schedule until it reaches this epsilon
-    annealing_steps  = 15 # number of steps to reduce starting_epsilon to ending_epsilon
-    pretraining_steps = 500
+    ending_epsilon   = 0.05  # decreases on some schedule until it reaches this epsilon
+    annealing_steps  = 5000  # number of steps to reduce starting_epsilon to ending_epsilon
+    pretraining_steps = 5000 # numbear of steps to play randomly and gather state information
+    
     tau = 0.001 # rate at which target network is updated toward primary network
     
     h_size = 512
@@ -314,19 +327,13 @@ with warnings.catch_warnings():
     
     # reward list over each episode
     rwrds = []
-    
+    steps_ctr = []
     total_steps = 0
     
     left,right,up,down = 0,0,0,0
 
 if __name__ == '__main__':
-    logger = logging.getLogger('DQN_logger')
-    hdlr = logging.FileHandler('./logs/dqn_log')
-    fmter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-    hdlr.setFormatter(fmter)
-    logger.addHandler(hdlr)
-    logger.setLevel(logging.WARNING)
-    
+
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         
@@ -343,7 +350,6 @@ if __name__ == '__main__':
         # of this directory
         
         if load_model != None and not os.path.exists(load_model):
-            logger.error("[!] Could not locate {}".format(load_model))
             sys.exit("[!] Could not locate {}".format(load_model))
             
         
@@ -371,11 +377,12 @@ if __name__ == '__main__':
         load_model   = game_args['load']
         load_pth     = game_args['load_pth']
         
-        img_pth = screenshot_location.strip("/") + "/" + "*pgm"
+        img_pth = screenshot_location.strip("/") + "/" + "*pgm"  # search string
         buffer_string = ""
         
         #process = None
-        print ("[!] Starting session at {}".format(datetime.datetime.now().strftime("%m/%d/%Y - %H:%M:%S")))
+        begin = datetime.datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
+        print ("[!] Starting session at {}".format(begin))
         with tf.Session() as sess:
             sess.run(init)
             
@@ -411,8 +418,9 @@ if __name__ == '__main__':
                 state_p1 = None
                 score_t  = None
                 score_t1 = None
-                
+                buffer_string = ""
                 running_reward = 0
+                frame_buffer   = ut.FrameBuffer()
                 # do gradient step for nsteps
                 while steps < N_STEPS and not dead:
                     
@@ -424,23 +432,16 @@ if __name__ == '__main__':
                     if steps < 60:
                         value = str(0) + str(0) + str(0) + str(0) + '\n'
                         ut.write_to_game(process,value)
-                        #print("removing {}".format(glob.glob(screenshot_location+"/*pgm")))
-                        #for filename in glob.glob(screenshot_location + "/*pgm"):
-                        #    os.remove(filename)
                         
                         continue # lots of black screen before anythign happens
                     else:    
-                        if steps-1 == 0:
+                        if steps == 60:
                            state,score_t,buffer_string,curr_photos,old_photos = ut.next_state_and_reward(old_photos,curr_photos,
                                                                                                          img_pth,screenshot_location,
                                                                                                          out_dir,buffer_string,epsilon,
-                                                                                                         total_steps,-1,logger)
-                           
+                                                                                                         total_steps,-1)      
                         else:
                             if steps % PLAY_FREQ == 0:
-                                #ut.write_to_game(process,'k\n')
-                                #response = str(ut.read_from_game(process))
-                                #wait_time+=1
             
                                 # with probability epsilon or if training hasn't begun yet ... 
                                 if total_steps < pretraining_steps or np.random.rand(1) < epsilon:
@@ -453,10 +454,33 @@ if __name__ == '__main__':
                                 
                                 else:
                                     # select an action
-                                    action = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:state})
+                                    if state != None:
+                                        #print('getting an action')
+                                        
+                                        print(frame_buffer.stack)
+                                        fb  = np.vstack(frame_buffer.stack)
+                                        while fb.shape[0] < 4:
+                                                fb = np.vstack([fb,fb[-1]])
+                                        print(fb)
+                                        
+                                        action = sess.run(mainQN.predict,
+                                                          feed_dict={mainQN.frame_array:np.reshape(fb,[1,
+                                                                                                   7056*ut.N_CHANNELS]
+                                                                                                    )
+                                                                    }
+                                                          )
+                                    
+                                    else:
+                                        action = [-1]  
+                                    
                                     action = action[0]
+                                    
                                     actions = np.zeros(3)
                                     actions[action] = 1
+                                    
+                                    if action == -1:
+                                        actions[action] = 0
+                                    
                                     
                                     # left right up down
                                     value = str(actions[0]) + str(actions[1]) + str(0) +  str(actions[2]) + '\n'
@@ -466,52 +490,89 @@ if __name__ == '__main__':
                                 state_p1, score_t1, buffer_string,curr_photos,old_photos = ut.next_state_and_reward(old_photos,curr_photos,
                                                                                                                     img_pth,screenshot_location,
                                                                                                                     out_dir,buffer_string,epsilon,
-                                                                                                                    total_steps,action,logger)
-                                terminal = np.ones([3,1])
+                                                                                                                    total_steps,action)
+                                terminal = 0
                                 #print(score_t1,score_t)
                                 if score_t1 == score_t:
                                     score_t1 -= 1000
                                     #print("[-] foul play {}".format(steps))
-                                    terminal = np.zeros([3,1])
+                                    terminal = 0
                                     dead = True
                                     
-                                transition = [state,action,score_t1,state_p1]
-                                    
-                                ep_buff.add(np.reshape(transition,[1,4]))
+                                old_buff = frame_buffer.deep_copy()
+                                frame_buffer.add(state_p1)
+                                transition = [old_buff.stack,action,score_t1,frame_buffer.stack]
+                                #transition = [state,action,score_t1,state_p1]
+                                if state_p1 != None and state != None:
+                                    ep_buff.add(np.reshape(transition,[1,4]))
                                 
                                 if total_steps > pretraining_steps:
-                                    print ('[!] here: {} {}'.format(steps,total_steps))
+                                    #print ('[!] here: steps --> {}  total --> {}'.format(steps,total_steps))
                                     
                                     if epsilon > ending_epsilon:
                                         epsilon -= step_drop
                                     
-                                    if steps % UPDATE_FREQ == 0 and steps != 0:
-                                        
+                                    if steps % UPDATE_FREQ == 0 and steps != 0 and action != -1:
+                                        #print('updating...')
                                         # sample out a random batch
                                         trainBatch = buff.sample(BATCH_SIZE)
+                                        print (trainBatch[:,3].shape)
+                                        stp1 =  np.vstack(trainBatch[:,3])
+                                        print(stp1.shape)
+                                        stp1 = np.reshape(stp1,[32,7056*4])
+                                        print(stp1)
                                         
+                                        #stp1 = np.reshape(stp1,[32,4])
                                         # belief of the optimal action value of next state
-                                        maxQ = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:np.vstack(trainBatch[:,3])})
-                                        print(actions)
+                                        #print("maxQ")
+                                        #or exp in stp1:
+                                        #print(exp)
+                                        maxQ = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:stp1})
+                                        #,[-1,ut.N_CHANNELS*ut.X_SIZE*ut.Y_SIZE]))})
+
                                         # action value of previous state
-                                        Q1 = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:np.vstack(trainBatch[:,3])})
-                                        Q2 = sess.run(targetQN.Qout,feed_dict={targetQN.frame_array:np.vstack(trainBatch[:,3])})
-                                       # Q    = sess.run(mainQN.Qout,feed_dict={mainQN.frame_array:np.vstack(trainBatch[:,0]),
-                                        #                                       mainQN.actions:trainBatch[:,1]})# 
-                                        #print("shape Q {}".format(Q.shape))
-                                        #print("shape MaxQ {}".format(maxQ.shape))
-                                        #print("shape trainBatch[:,2] {}".format(trainBatch[:,2].shape))
-                                       # end_multiplier = -(trainBatch[:,3] - 1)
+                                        print("Q1")
+                                        Q1 = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:stp1})
+                                        print("Q2")
+                                        Q2 = sess.run(targetQN.Qout,feed_dict={targetQN.frame_array:stp1})
+                                        
+                                        #print("doubleQ")
                                         doubleQ = Q2[range(BATCH_SIZE),Q1]
+                                        
+                                        #print("targetQ")
                                         targetQ = trainBatch[:,2] + (gamma*doubleQ * terminal)
                                         
-                                        _ = sess.run(mainQN.optimizer,feed_dict={mainQN.frame_array:np.vstack(trainBatch[:,0]),
-                                                                             mainQN.targetQ:targetQ,mainQN.actions:trainBatch[:,1]})
-                                        updateTarget(targetOps,sess)
-                                        print ("[*] Updated model")
+                                        #print("frame_arr")
+                                        frame_arr = np.vstack(trainBatch[:,0])
+                                        print (trainBatch[:,0].shape)
+                                        st =  np.vstack(trainBatch[:,0])
+                                        print(st.shape)
+                                        print(st)
+                                        if st.shape[0] != 128:
+                                            while st.shape[0] < 128:
+                                                st = np.vstack([st,st[-1]])
+                                        
+                                        print(st)
+                                        print(st.shape)
+                                        st = np.reshape(st,[32,7056*4])
+                                        print(st)
+                        
+                                        #print("myactions")
+                                        myactions = np.vstack(trainBatch[:,1])
+                                       
+                                        print("_")
+                                        _ = sess.run(mainQN.optimizer,feed_dict={mainQN.frame_array:st,
+                                                                             mainQN.targetQ:targetQ,
+                                                                             mainQN.actions:trainBatch[:,1]})
+                                        updateTarget(target_ops,sess)
+                                        print ("[*] Updated model!")
                             else:
+                                
                                 value = str(0) + str(0) + str(0) + str(0) + '\n'
                                 ut.write_to_game(process,value)
+                                frame = ut.next_frame_thats_it(curr_photos,old_photos,img_pth,screenshot_location,out_dir)
+                                #print("adding a frame")
+                                frame_buffer.add(frame)
                                 
                             # end update sequence 
                             if state_p1 != None:
@@ -527,25 +588,19 @@ if __name__ == '__main__':
                 process.kill()
                 
                 rwrds.append(running_reward/steps)
+                steps_ctr.append(steps)
                 #print ("here we go again {} {}".format(dead,screenshot_location))
-                if i+1 % 200 == 0:
-                    saver.save(sess,"./model/model-"+str(i)+".ckpt")
-                    save(rwrds,"pickles/avg_rwd_m{}".format(str(i))+".pkl")
-                    print("Saved model")
+                saver.save(sess,"./model/model-"+str(i)+".ckpt")
+                save(rwrds,"./pickles/avg_rwd_m{}".format(str(i))+".pkl")
+                save(steps_ctr,"./pickles/step_ct_m{}".format(str(i)+".pkl"))
+                print("Saved model")
                 
                 # make the new screen shot directory            
                 # reset the resized photo directory to trigger creation
                 out_dir = None
             
             saver.save(sess,"./model-"+str(i)+".ckpt")
-            """
-            print('Game ended.')
-            value = str('d') + str('d') + str('d') + str('d') + '\n'
-            ut.write_to_game(process,value)
-            wait_time = 0
-            response = ""
-            while (response != 'd'):
-                ut.write_to_game(process,'k\n')
-                response = str(ut.read_from_game(process))
-                wait_time+=1
-            """
+
+end = datetime.datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
+print ("[!] Started at {}, ended at {}".format(begin,end))
+          

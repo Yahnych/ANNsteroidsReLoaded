@@ -15,8 +15,6 @@ Adapted primarily from Arthur Juliani
 """
 
 import numpy as np
-#import random
-#import sys, os
 import argparse
 import warnings
 from skimage.transform import resize
@@ -27,7 +25,8 @@ import time
 
 X_SIZE = 84
 Y_SIZE = 84
-N_CHANNELS = 1
+N_CHANNELS = 4
+VOLUME = 1
 
 CURSOR_UP_ONE = '\x1b[1A'
 ERASE_LINE    = '\x1b[2K'
@@ -171,7 +170,7 @@ def get_flat_image(filename):
     img = imread(filename)
     return np.reshape(img,[img.shape[0]**2])
 
-def next_state_and_reward(curr_photos,old_photos,img_pth,screenshot_location,out_dir,buffer_string,epsilon,total_steps,action,logger):
+def next_state_and_reward(curr_photos,old_photos,img_pth,screenshot_location,out_dir,buffer_string,epsilon,total_steps,action): #logger):
     """
     Get the next image and reward
     """
@@ -197,10 +196,52 @@ def next_state_and_reward(curr_photos,old_photos,img_pth,screenshot_location,out
     most_recent_photo = glob.glob(most_recent_regex)[0]
     
     buffer_string = "[+] e = %.03f " % epsilon + " | total_steps =  %05d" %total_steps  +" | action: {}".format(action) + " | img: " + most_recent_photo
-    logger.info(buffer_string)
+    #logger.info(buffer_string)
     # image to process
     rsz_photo = resize_and_save(most_recent_photo,out_dir,X_SIZE,Y_SIZE)
     
     return get_flat_image(rsz_photo),score_t,buffer_string,curr_photos,old_photos
+
+def next_frame_thats_it(curr_photos,old_photos,img_pth,screenshot_location,out_dir):
+    """
+    Get the next state, THATS IT
+    """
+    
+    while (len(curr_photos - old_photos) < 1):
+        curr_photos |= set(glob.glob(img_pth))
+    
+    time.sleep(1)
+    
+    new_photos = list(curr_photos - old_photos)
+    new_photos_rewards = [[int(photo_name.split("/")[1].split("_")[0]),int(photo_name.split("/")[1].split("_")[1].split(".")[0])] for photo_name in new_photos]
+    new_photos = [tup[0] for tup in new_photos_rewards]
+    
+    most_recent_regex = screenshot_location.strip("/") +"/%03d*pgm" % max(new_photos)
+    most_recent_photo = glob.glob(most_recent_regex)[0]
+    
+    rsz_photo = resize_and_save(most_recent_photo,out_dir,X_SIZE,Y_SIZE)
+    
+    return get_flat_image(rsz_photo)
     
     
+
+class FrameBuffer:
+    def __init__(self,size=4):
+        self.stack = []
+        self.size  = size
+    
+    def deep_copy(self):
+        #print(type(self.stack))
+        temp = FrameBuffer()
+        temp.stack.extend(self.stack)
+       
+        return temp
+    
+    def add(self, frame):
+        self.stack.append(frame)
+        N_too_many = len(self.stack) - self.size
+        
+        if N_too_many > 0:
+            #print ("N too many: {}".format(N_too_many))
+            for i in range(N_too_many):
+                self.stack.pop(0)
