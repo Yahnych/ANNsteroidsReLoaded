@@ -302,7 +302,7 @@ with warnings.catch_warnings():
     starting_epsilon = 1   # starting epsilon
     ending_epsilon   = 0.05  # decreases on some schedule until it reaches this epsilon
     annealing_steps  = 5000  # number of steps to reduce starting_epsilon to ending_epsilon
-    pretraining_steps = 5000 # numbear of steps to play randomly and gather state information
+    pretraining_steps = 10000 # numbear of steps to play randomly and gather state information
     
     tau = 0.001 # rate at which target network is updated toward primary network
     
