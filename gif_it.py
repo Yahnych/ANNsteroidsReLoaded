@@ -25,9 +25,10 @@ def create_gif(filenames,out_dir,name):
         print (i,image)
         images.append(image)
 
-    gif_name = out_dir.strip("/") + "/" +name.strip(".gif") + ".gif"
-
-    imageio.mimsave(gif_name,images,duration=0.5)
+    gif_name = "cool.gif"
+    #gif_name = out_dir.strip("/") + "/" +name.strip(".gif") + ".gif"
+    print("done")
+    imageio.mimsave(gif_name,images)
 
 
 def parse_args():
@@ -56,6 +57,7 @@ if __name__ == '__main__':
         out_dir   = args.out_dir
         name      = args.gif_name
 
+        
         if not all(f.lower().endswith(VALID_EXTENSIONS) for f in filenames):
             print('Only png and jpg files allowed')
             sys.exit(1)
