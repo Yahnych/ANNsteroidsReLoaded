@@ -8,6 +8,7 @@ Created on Thu Oct 26 20:42:08 2017
 
 import sys
 import argparse
+import warnings
 
 try:
     import imageio
@@ -17,11 +18,16 @@ except ImportError:
 VALID_EXTENSIONS = ('png', 'jpg')
 
 def create_gif(filenames,out_dir,name):
+    print (name)
+    images = []
+    for i,filename in enumerate(filenames):
+        image = imageio.imread(filename)
+        print (i,image)
+        images.append(image)
 
-    with imageio.get_writer(out_dir.strip("/") + "/" + name.strip(".gif")  + ".gif", mode='I') as writer:
-        for filename in filenames:
-            image = imageio.imread(filename)
-            writer.append_data(image)
+    gif_name = out_dir.strip("/") + "/" +name.strip(".gif") + ".gif"
+
+    imageio.mimsave(gif_name,images,duration=0.5)
 
 
 def parse_args():
@@ -42,15 +48,17 @@ if __name__ == '__main__':
     #    sys.exit(1)
     
     #p = float(sys.argv[1])
-    args = parse_args().parse_args()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore','UserWarning')
+        args = parse_args().parse_args()
 
-    filenames = args.images
-    out_dir   = args.out_dir
-    name      = args.gif_name
+        filenames = args.images
+        out_dir   = args.out_dir
+        name      = args.gif_name
 
-    if not all(f.lower().endswith(VALID_EXTENSIONS) for f in filenames):
-        print('Only png and jpg files allowed')
-        sys.exit(1)
+        if not all(f.lower().endswith(VALID_EXTENSIONS) for f in filenames):
+            print('Only png and jpg files allowed')
+            sys.exit(1)
   
-          
-    create_gif(filenames,out_dir,name)
+        print (filenames,out_dir,name)
+        create_gif(filenames,out_dir,name)

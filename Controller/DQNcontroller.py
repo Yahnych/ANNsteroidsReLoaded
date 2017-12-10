@@ -294,9 +294,9 @@ with warnings.catch_warnings():
     # parameter intialization
     BATCH_SIZE = 32
     UPDATE_FREQ = 2
-    PLAY_FREQ = 3    # take action every 6 frames which is comprable to human speeds
+    PLAY_FREQ = 3    # take action every 3 frames which is comprable to human speeds
     N_STEPS = 400
-    N_EPISODES = 200
+    N_EPISODES = 800
     
     gamma = 0.99
     starting_epsilon = 1   # starting epsilon
