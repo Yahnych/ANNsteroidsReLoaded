@@ -33,6 +33,8 @@ GLdouble screen_width, screen_height;
 
 bool CONTROLLER = true;
 
+bool ss_off = false;
+
 int wd;
 
 
@@ -689,15 +691,15 @@ void getPythonCommands(){
         }
     }
     else if (ship.getNumLives() == 0){
-        std::cout << "e\n";
+        std::cout << "e" << score << "\n";
         done = true;
     }
     else if (command[0] == 'd'){
         done = true;
         std::cout << "Wrapping up..." << "\n";
     } else {
-    std::cout << command[0] << ", " << command[1] << ", " << command[2] << ", " << command[3] << "\n";
-    
+    //std::cout << command[0] << ", " << command[1] << ", " << command[2] << ", " << command[3] << "\n";
+    std::cout << score << "\n";
     if (command[0] == '1'){
         keys[GLUT_KEY_LEFT] = true;
     } else {
@@ -816,7 +818,7 @@ void display() {
     if (CONTROLLER){
     	
         
-    	if (screenshot_counter%2 == 0 && !done) {
+    	if (!ss_off && screenshot_counter%2 == 0 && !done) {
             currentNumThreads++;
             
             GLubyte *pixels2 = NULL;
@@ -1058,10 +1060,15 @@ int main(int argc, char** argv) {
     //err =  CGLEnable( ctx, kCGLCEMPEngine);
     if (argc == 1){
     	std::cout << "Error: expecting file path for screenshots" << endl;
-    	exit(-1);
+    	CONTROLLER = false;
+    	//exit(-1);
     } else {
     	//std::cout << "argument: " << argv[1] << endl;
     	file_path = argv[1];
+    	//cout << file_path << "!" <<  endl;
+    	if (file_path[0] == '!'){
+    		ss_off = true;
+    	}
     }
     
     init();

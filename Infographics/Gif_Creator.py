@@ -3,6 +3,7 @@ import imageio
 import sys
 import warnings
 import argparse
+from PIL import Image
 
 def create_gif(png_dir, out_dir, sort=False):
     images = []
@@ -18,7 +19,8 @@ def create_gif(png_dir, out_dir, sort=False):
                 print("Ignoring:", file_path)
     imageio.mimsave(out_dir, images, duration=0.05)
     
-
+def convert_ppm_to_png(ppm_dir, ppm_out):
+    pass
 def get_frame_number(frame):
     """
     Utility used to sort a list of frames based on frame number.

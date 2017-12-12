@@ -4,22 +4,40 @@ import sys
 import argparse
 import os
 from time import sleep
+
+N_STEPS = 400
+N_EPISODES = 800
+PLAY_FREQ = 3
+
 def play_game(p):
     
     
-    i = 0
+    steps = 0
 
     result = ""
     
     left = random.randint(0, 1)
     right = random.randint(0, 1)
-    #up = random.randint(0, 1)
     up = 0
     space = random.randint(0, 1)
+
+    dead = False
     
-    while (i < 400 and 'e' not in str(result)):
+    while (steps < N_STEPS and 'e' not in str(result)):
+        if steps % PLAY_FREQ == 0:
+            left = random.randint(0, 1)
+            right = random.randint(0, 1)
+            up = 0
+            space = random.randint(0, 1)
+        else:
+            left = 0
+            right = 0
+            up = 0
+            space = 0
+            
         value = str(left) + str(right) + str(up) + str(space) + '\n'
         value = bytes(value, 'UTF-8')  # Needed in Python 3.
+        
         p.stdin.write(value)
         p.stdin.flush()
         result = p.stdout.readline().strip()
@@ -29,7 +47,6 @@ def play_game(p):
         if i % 2 == 0:
             left = random.randint(0, 1)
             right = random.randint(0, 1)
-            #up = random.randint(0, 1)
             up = 0
             space = random.randint(0, 1)
         i+=1
@@ -56,22 +73,6 @@ def play_game(p):
         wait_time+=1
     
     p.kill()
-    '''
-    response = ""
-    wait_time = 0
-    while (reponse != 'd' and wait_time < 10):
-        #p.stdin.write(value)
-        #p.stdin.flush()
-        #result = p.stdout.readline().strip()
-        #result = result.decode("utf-8")
-        #response = str(result)
-        wait_time+=1
-
-    print ("sleeping for 10")
-    sleep(10)
-    p.kill()
-    print("Done")
-    '''
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Run DRL agent')
