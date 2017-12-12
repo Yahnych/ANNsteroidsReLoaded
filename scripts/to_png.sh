@@ -2,8 +2,12 @@ DIR=$1
 
 mkdir $DIR/pngs
 PNGDIR=$DIR/pngs
-RSZGIF=$DIR/agent_exp
-EPGIF=$DIR/$DIR
+
+CURSOR_UP_ONE="\x1b[1A"
+ERASE_LINE="\x1b[2K"
+
+BUFFER_LINE=$CURSOR_UP_ONE+$ERASE_LINE
+
 for f in $DIR/*pgm; do
 	PNGSTR=$(echo $f | sed 's/.pgm/.png/')
 echo "$f,  $PNGSTR"

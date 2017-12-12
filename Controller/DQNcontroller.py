@@ -288,55 +288,58 @@ class ExperienceBuffer():
         """
         return np.reshape(np.array(random.sample(self.buffer,size)),[size,4])
         
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    
-    # parameter intialization
-    BATCH_SIZE = 32
-    UPDATE_FREQ = 2
-    PLAY_FREQ = 3    # take action every 3 frames which is comprable to human speeds
-    N_STEPS = 400
-    N_EPISODES = 800
-    
-    gamma = 0.99
-    starting_epsilon = 1   # starting epsilon
-    ending_epsilon   = 0.05  # decreases on some schedule until it reaches this epsilon
-    annealing_steps  = 5000  # number of steps to reduce starting_epsilon to ending_epsilon
-    pretraining_steps = 10000 # numbear of steps to play randomly and gather state information
-    
-    tau = 0.001 # rate at which target network is updated toward primary network
-    
-    h_size = 512
-    
-    # variable initialization
-    tf.reset_default_graph()
-    mainQN = QNetwork(h_size,name="DQN behavior") # the behavior network
-    targetQN = QNetwork(h_size,name="DQN optimal") # the target network
-    
-    init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
-    
-    trainable_vars = tf.trainable_variables()
-    target_ops     = updateTargetNet(trainable_vars,tau)
-    
-    # initialize Experience Buffer
-    buff = ExperienceBuffer()
-    
-    epsilon = starting_epsilon
-    step_drop = (starting_epsilon - ending_epsilon)/annealing_steps
-    
-    # reward list over each episode
-    rwrds = []
-    steps_ctr = []
-    total_steps = 0
-    
-    left,right,up,down = 0,0,0,0
 
+# parameter intialization
+BATCH_SIZE = 32
+UPDATE_FREQ = 2
+PLAY_FREQ = 3    # take action every 3 frames which is comprable to human speeds
+N_STEPS = 400
+N_EPISODES = 800
+
+gamma = 0.99
+starting_epsilon = 1   # starting epsilon
+ending_epsilon   = 0.05  # decreases on some schedule until it reaches this epsilon
+annealing_steps  = 5000  # number of steps to reduce starting_epsilon to ending_epsilon
+pretraining_steps = 10000 # numbear of steps to play randomly and gather state information
+
+tau = 0.001 # rate at which target network is updated toward primary network
+
+h_size = 512
+
+# variable initialization
+tf.reset_default_graph()
+mainQN = QNetwork(h_size,name="DQN behavior") # the behavior network
+targetQN = QNetwork(h_size,name="DQN optimal") # the target network
+
+init = tf.global_variables_initializer()
+saver = tf.train.Saver()
+
+trainable_vars = tf.trainable_variables()
+target_ops     = updateTargetNet(trainable_vars,tau)
+
+# initialize Experience Buffer
+buff = ExperienceBuffer()
+
+epsilon = starting_epsilon
+step_drop = (starting_epsilon - ending_epsilon)/annealing_steps
+
+# reward list over each episode
+rwrds = []
+steps_ctr = []
+total_steps = 0
+
+left,right,up,down = 0,0,0,0
+
+
+params = [BATCH_SIZE,UPDATE_FREQ,PLAY_FREQ,N_STEPS,N_EPISODES,gamma,
+          starting_epsilon,annealing_steps,pretraining_steps,tau,h_size,
+          step_drop]
+
+param_names = "BATCH_SIZE,UPDATE_FREQ,PLAY_FREQ,N_STEPS,N_EPISODES,gamma,starting_epsilon,annealing_steps,pretraining_steps,tau,h_size,step_drop".split(",")
+              
 if __name__ == '__main__':
-
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        
+        warnings.simplefilter("ignore")
         ########################### simulation setup ###############################
         ###########################################################################
         args =  ut.setup_args()
@@ -380,6 +383,12 @@ if __name__ == '__main__':
         img_pth = screenshot_location.strip("/") + "/" + "*pgm"  # search string
         buffer_string = ""
         
+        print()
+        print("="*50)
+        for p,n in zip(params,param_names):
+            print("[*] {:<22}: {}".format(n,p))
+        print("="*50)
+        print()
         #process = None
         begin = datetime.datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
         print ("[!] Starting session at {}".format(begin))
@@ -529,7 +538,7 @@ if __name__ == '__main__':
                                         #print(exp)
                                         maxQ = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:stp1})
                                         #,[-1,ut.N_CHANNELS*ut.X_SIZE*ut.Y_SIZE]))})
-
+    
                                         # action value of previous state
                                         print("Q1")
                                         Q1 = sess.run(mainQN.predict,feed_dict={mainQN.frame_array:stp1})
@@ -603,4 +612,4 @@ if __name__ == '__main__':
 
 end = datetime.datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
 print ("[!] Started at {}, ended at {}".format(begin,end))
-          
+      

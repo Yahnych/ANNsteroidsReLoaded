@@ -9,7 +9,7 @@ def create_gif(png_dir, out_dir, sort=False):
     for subdir, dirs, files in os.walk(png_dir):
         if sort == True:
             files.sort(key=get_frame_number)
-        print(files)
+        #print(files)
         for file in files:
             file_path = os.path.join(subdir, file)
             if file_path.endswith(".png"):
